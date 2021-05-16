@@ -53,12 +53,13 @@ const init = () => {
 
         socket.on('update', ({players: players, collect:collect, changed:changed}) => {
             playerList = players
+            lantern = new Collectible(collect)
+
             if (changed){
                 if (player.id === changed.id) {
                     player = new Player(changed)
                 }
             }
-            lantern = new Collectible(collect)
         });
 
     });
@@ -86,7 +87,6 @@ const update = () => {
         context.textAlign = 'center';
         context.fillText('Score', 80, 20);
         context.textAlign = 'center';
-        console.log(player.radius)
         context.fillText(`${player.radius}`, 80, 45);
 
 
