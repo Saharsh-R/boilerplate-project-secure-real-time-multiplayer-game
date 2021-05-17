@@ -15,13 +15,12 @@ const loadImage = src => {
 
 }
 
-https://github.com/Saharsh-R/boilerplate-project-secure-real-time-multiplayer-game/blob/master/public/img/enemy.png?raw=true
 
 const bronzeCoinArt = loadImage('https://cdn.freecodecamp.org/demo-projects/images/bronze-coin.png');
 const silverCoinArt = loadImage('https://cdn.freecodecamp.org/demo-projects/images/silver-coin.png');
 const goldCoinArt = loadImage('https://cdn.freecodecamp.org/demo-projects/images/gold-coin.png');
-const mainPlayerArt = loadImage('https://cdn.freecodecamp.org/demo-projects/images/main-player.png');
-const otherPlayerArt = loadImage('https://cdn.freecodecamp.org/demo-projects/images/other-player.png');
+const mainPlayerArt = loadImage('https://pngimg.com/uploads/dog/dog_PNG50348.png');
+const otherPlayerArt = loadImage('https://raw.githubusercontent.com/Saharsh-R/boilerplate-project-secure-real-time-multiplayer-game/master/public/img/enemy.png');
 
 let tick;
 let currPlayers = [];

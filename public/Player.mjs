@@ -22,7 +22,7 @@ class Player {
       context.fillText(this.calculateRank(currPlayers), 560, 32.5);
       context.fillText(`Score: ${this.score}`, 80, 32.5) //adding the score.
 
-      context.drawImage(imgObj.mainPlayerArt, this.x, this.y);
+      context.drawImage(imgObj.mainPlayerArt, this.x, this.y, 60, 60);
     } else {
       context.drawImage(imgObj.otherPlayerArt, this.x, this.y);
     }
