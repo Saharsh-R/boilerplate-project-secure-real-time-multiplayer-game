@@ -3,7 +3,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const expect = require('chai');
 const socket = require('socket.io');
-
+const helmet = require('helmet');
 const fccTestingRoutes = require('./routes/fcctesting.js');
 const runner = require('./test-runner.js');
 const cors = require('cors'); // required to pass tests
@@ -15,6 +15,11 @@ app.use('/assets', express.static(process.cwd() + '/assets'));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+app.use(helmet.noSniff());
+app.use(helmet.xssFilter());
+app.use(helmet.noCache());
+app.use(helmet.hidePoweredBy({ setTo: 'PHP 7.4.3' }));
 
 // Index page (static HTML)
 app.route('/')
@@ -49,89 +54,77 @@ const server = app.listen(portNum, () => {
     }, 1500);
   }
 });
-
-const Player = require('./public/Player.mjs');
 const Collectible = require('./public/Collectible');
-const {dimension} = require('./public/dimension');
+const Player = require('./public/Player');
 
-const random = (min, max) => {
+const Dimensions = require('./public/canvas-data')
+const canvasCalcs = Dimensions.canvasCalcs
+
+function randomInteger(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-const getRandomPosition = () => {
-  let x = random(dimension.minX+50, dimension.maxX-50)
-  let y = random(dimension.minY+50, dimension.maxY-50);
-  return [x, y]
+const io = socket(server)
+
+let currPlayers = [];
+
+function createCollectible(){
+  return new Collectible({
+    x: randomInteger(canvasCalcs.playFieldMinX, canvasCalcs.playFieldMaxX),
+    y: randomInteger(canvasCalcs.playFieldMinY, canvasCalcs.playFieldMaxY),
+    value: randomInteger(1, 3), 
+    id: Date.now(),
+  })
 }
 
-let playerList = []
-let [collectX, collectY] = getRandomPosition()
-let collect = new Collectible({x: collectX, y: collectY, value: 1, id: Date.now()})
-let connections = [];
+let item = createCollectible()
 
 
 
-const io = socket(server)
-io.sockets.on('connection', socket => {
-  console.log(`New connection: ${socket.id}`)
-  // connections.push(socket)
+io.on('connection', socket => {
+  
+  socket.emit('init', {id: socket.id, players: currPlayers, coin: item})
 
-  let [x, y] = getRandomPosition()
-  let player = new Player({x, y, score: 0, id: socket.id})
-  playerList.push(player)
+  socket.on('new-player', newplayer => {
+    currPlayers.push(new Player(newplayer))
+    io.emit('new-player', newplayer)
+  })
 
-  console.log(`TOTAL connections: ${playerList.length}`)
+  socket.on('move-player', (dir, {x, y}) => {
+    const movingPlayer = currPlayers.find(obj => obj.id === socket.id);
+    movingPlayer.moveDir(dir);
+    movingPlayer.x = x;
+    movingPlayer.y = y;
 
-  socket.emit('init', {id: socket.id, players: playerList, collect})
-
-  socket.on('player', (updatedUser) => {
-    // console.log('old', playerList)
-    playerList.forEach(user => {
-        if(user.id == socket.id){
-            user.x = updatedUser.x;
-            user.y = updatedUser.y;
-            user.score = updatedUser.score;
-        }
-    });
-    // console.log('new', playerList)
-    io.emit('update', {players: playerList,collect:collect, changed: null});
-  });
+    
 
 
+    io.emit('move-player', ({id: socket.id, dir, posObj: {x, y} }))
+
+    if (movingPlayer.collision(item)){
+      item = createCollectible()
+      io.emit('new-coin', item)
+      movingPlayer.score += item.value
+      io.emit('update-player', movingPlayer)
+
+    }
+
+  })
+
+  socket.on('stop-player', (dir, {x, y}) => {
+    const stoppingPlayer = currPlayers.find(obj => obj.id === socket.id);
+    stoppingPlayer.stopDir(dir);
+    stoppingPlayer.x = x;
+    stoppingPlayer.y = y;
+    io.emit('stop-player', ({id: socket.id, dir, posObj: {x, y} }))
+  })
+  
 
   socket.on('disconnect', () => {
-    console.log(`Disconnected: ${socket.id}`)
-    playerList = playerList.filter(x => x.id != socket.id)
-    console.log(`TOTAL connections: ${playerList.length}`)
+    currPlayers = currPlayers.filter(x => x.id != socket.id)
+    io.emit('remove-player', socket.id)
   })
+
 })
 
-
-
-
-setInterval(tick, 100)
-function tick() {
-  let updated = null
-  playerList.forEach(ppp => {
-    let p = new Player(ppp)
-    if (p.collision(collect)) {
-      ppp.score += 2
-      ppp.radius += 10
-      let [collectX, collectY] = getRandomPosition();
-      collect = new Collectible({x: collectX, y: collectY, value: 1, id: Date.now()})
-      updated = ppp
-    }
-  })
-  
-  io.emit('udpate', {
-    players: playerList,
-    collect: collect, 
-    changed: updated
-  })
-
-  
-
-  
-  
-}
 
 module.exports = app; // For testing
