@@ -12,7 +12,10 @@ const loadImage = src => {
   const img = new Image();
   img.src = src;
   return img;
+
 }
+
+https://github.com/Saharsh-R/boilerplate-project-secure-real-time-multiplayer-game/blob/master/public/img/enemy.png?raw=true
 
 const bronzeCoinArt = loadImage('https://cdn.freecodecamp.org/demo-projects/images/bronze-coin.png');
 const silverCoinArt = loadImage('https://cdn.freecodecamp.org/demo-projects/images/silver-coin.png');
